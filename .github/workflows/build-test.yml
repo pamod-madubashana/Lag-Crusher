@@ -45,4 +45,5 @@ jobs:
           name: android-test
           path: |
             src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            !src-tauri/gen/android/app/build/outputs/apk/**/*-unsigned.apk
             src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
