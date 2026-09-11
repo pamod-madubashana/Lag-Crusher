@@ -17,11 +17,24 @@ jobs:
           java-version: 17
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('src-tauri/gen/android/**/gradle-wrapper.properties', 'src-tauri/**/Cargo.lock') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - name: Run tests
         run: bun run test
       - uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
       - name: Add Android targets
         run: |
           rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
@@ -30,7 +43,14 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $GITHUB_WORKSPACE/test-key.jks
           ls -la $GITHUB_WORKSPACE/test-key.jks
           file $GITHUB_WORKSPACE/test-key.jks
+      - name: Cache Tauri CLI
+        id: cache-tauri
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tauri
+          key: tauri-cli-v2-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}
       - name: Install Tauri CLI
+        if: steps.cache-tauri.outputs.cache-hit != 'true'
         run: cargo install tauri-cli --version "^2"
       - name: Init Android project
         run: cargo tauri android init
